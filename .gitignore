@@ -1,0 +1,5 @@
+dist/
+node_modules/
+.parcel-cache/
+
+wasm_exec.js

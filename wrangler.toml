@@ -1,0 +1,11 @@
+name = "worker"
+type = "javascript"
+
+account_id = "fcd34d0b05da5e3591dfc349616dfff3"
+workers_dev = true
+route = ""
+zone_id = ""
+compatibility_date = "2022-01-05"
+
+[wasm_modules]
+WASM = "./main.wasm"

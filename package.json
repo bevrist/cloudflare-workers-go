@@ -1,0 +1,11 @@
+{
+  "name": "cloudflare-worker-golang",
+  "main": "dist/index.js",
+  "private": true,
+  "scripts": {
+    "build": "esbuild worker.js --platform=node --bundle --outfile=dist/index.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.14.11"
+  }
+}
