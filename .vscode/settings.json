@@ -1,4 +1,5 @@
 {
+  // enable vscode to use `syscall/js` in autocomplete suggestions and tooltips
   "go.toolsEnvVars": {
     "GOOS": "js",
     "GOARCH": "wasm"
