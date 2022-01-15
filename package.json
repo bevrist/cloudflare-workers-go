@@ -3,7 +3,8 @@
   "main": "dist/index.js",
   "private": true,
   "scripts": {
-    "build": "esbuild worker.js --platform=node --bundle --outfile=dist/index.js"
+    "build": "esbuild worker.js --platform=node --bundle --outfile=dist/index.js",
+    "prod": "esbuild worker.js --platform=node --bundle --minify --outfile=dist/index.js"
   },
   "devDependencies": {
     "esbuild": "^0.14.11"

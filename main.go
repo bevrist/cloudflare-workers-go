@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package main
 
 import (
@@ -16,6 +18,9 @@ var called = 0
 func main() {
 	called++
 	println("Hello from TinyGo! Called", called, "times so far!")
+	println("lol: " + js.Global().Get("lol").String())
+	js.Global().Call("test")
+	println("test2: " + js.Global().Call("test2").String())
 }
 
 //export multiply

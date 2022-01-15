@@ -3,3 +3,4 @@ node_modules/
 .parcel-cache/
 
 wasm_exec.js
+main.wasm
