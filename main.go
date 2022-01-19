@@ -3,7 +3,8 @@
 package main
 
 import (
-	// https://github.com/golang/go/tree/master/src/syscall/js
+	"io/ioutil"
+	"net/http"
 	"syscall/js"
 )
 
@@ -21,6 +22,30 @@ func main() {
 	println("lol: " + js.Global().Get("lol").String())
 	js.Global().Call("test")
 	println("test2: " + js.Global().Call("test2").String())
+
+	// resp, err := http.DefaultClient.Get("https://random-data-api.com/api/stripe/random_stripe")
+	// if err != nil {
+	// 	println("ERROR: " + err.Error())
+	// } else {
+	// 	body, _ := io.ReadAll(resp.Body)
+	// 	println("hi")
+	// 	println("request: " + string(body))
+	// }
+	// resp.Body.Close()
+	// println("aaa")
+
+	go func() {
+		println("running")
+		// Make the HTTP request
+		res, _ := http.DefaultClient.Get("https://random-data-api.com/api/stripe/random_stripe")
+		println("hello")
+		defer res.Body.Close()
+
+		// Read the response body
+		data, _ := ioutil.ReadAll(res.Body)
+		println(string(data))
+	}()
+	println("done")
 }
 
 //export multiply

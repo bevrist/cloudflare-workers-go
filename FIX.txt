@@ -1,0 +1,5 @@
+fix golang roundtrip
+remove credential because cloudflare doesn't allow it
+
+edit /usr/local/Cellar/go/1.17.5/libexec/src/net/http/roundtrip_js.go
+comment line 64: `opt.Set("credentials", "same-origin")`
