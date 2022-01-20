@@ -1,75 +1,80 @@
-//go:build js && wasm
+// Copyright (C) 2020 Alessandro Segala (ItalyPaleAle)
+// License: MIT
 
 package main
 
+// Import the package to access the Wasm environment
 import (
 	"io/ioutil"
 	"net/http"
 	"syscall/js"
 )
 
-var (
-	// js.Value can be any JS object/type/constructor
-	window, doc, body, canvas, laserCtx, beep js.Value
-	windowSize                                struct{ w, h float64 }
-)
+// async function MyFunc() {
+// 	try {
+// 			const response = await MyGoFunc('https://api.taylor.rest/')
+// 			const message = await response.json()
+// 			console.log(message)
+// 	} catch (err) {
+// 			console.error('Caught exception', err)
+// 	}
+// }
 
-var called = 0
-
+// Main function: it sets up our Wasm application
 func main() {
-	called++
-	println("Hello from TinyGo! Called", called, "times so far!")
-	println("lol: " + js.Global().Get("lol").String())
-	js.Global().Call("test")
-	println("test2: " + js.Global().Call("test2").String())
-
-	// resp, err := http.DefaultClient.Get("https://random-data-api.com/api/stripe/random_stripe")
-	// if err != nil {
-	// 	println("ERROR: " + err.Error())
-	// } else {
-	// 	body, _ := io.ReadAll(resp.Body)
-	// 	println("hi")
-	// 	println("request: " + string(body))
-	// }
-	// resp.Body.Close()
-	// println("aaa")
-
-	go func() {
-		println("running")
-		// Make the HTTP request
-		res, _ := http.DefaultClient.Get("https://random-data-api.com/api/stripe/random_stripe")
-		println("hello")
-		defer res.Body.Close()
-
-		// Read the response body
-		data, _ := ioutil.ReadAll(res.Body)
-		println(string(data))
-	}()
-	println("done")
+	// Define the function "MyGoFunc" in the JavaScript scope
+	js.Global().Set("MyGoFunc", MyGoFunc())
+	// Prevent the function from returning, which is required in a wasm module
+	select {}
 }
 
-//export multiply
-func multiply(x, y int) int {
-	return x * y
-}
+// MyGoFunc fetches an external resource by making a HTTP request from Go
+// The JavaScript method accepts one argument, which is the URL to request
+func MyGoFunc() js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		requestUrl := args[0].String()
+		// We need to return a Promise because HTTP requests are blocking in Go
+		handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+			resolve := args[0]
+			reject := args[1]
+			go func() {
+				res, err := http.DefaultClient.Get(requestUrl)
+				if err != nil {
+					// Handle errors: reject the Promise if we have an error
+					errorConstructor := js.Global().Get("Error")
+					errorObject := errorConstructor.New(err.Error())
+					reject.Invoke(errorObject)
+					return
+				}
+				defer res.Body.Close()
 
-func setup() {
-	window = js.Global()
-	doc = window.Get("document")
-	body = doc.Get("body")
+				// Read the response body
+				data, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					// Handle errors here too
+					errorConstructor := js.Global().Get("Error")
+					errorObject := errorConstructor.New(err.Error())
+					reject.Invoke(errorObject)
+					return
+				}
 
-	windowSize.h = window.Get("innerHeight").Float()
-	windowSize.w = window.Get("innerWidth").Float()
+				// "data" is a byte slice, so we need to convert it to a JS Uint8Array object
+				arrayConstructor := js.Global().Get("Uint8Array")
+				dataJS := arrayConstructor.New(len(data))
+				js.CopyBytesToJS(dataJS, data)
 
-	canvas = doc.Call("createElement", "canvas")
-	canvas.Set("height", windowSize.h)
-	canvas.Set("width", windowSize.w)
-	body.Call("appendChild", canvas)
+				// Create a Response object and pass the data
+				responseConstructor := js.Global().Get("Response")
+				response := responseConstructor.New(dataJS)
 
-	// red 🔴 laser dot canvas object
-	laserCtx = canvas.Call("getContext", "2d")
-	laserCtx.Set("fillStyle", "red")
+				// Resolve the Promise
+				resolve.Invoke(response)
+			}()
+			return nil
+		})
 
-	// http://www.iandevlin.com/blog/2012/09/html5/html5-media-and-data-uri/
-	beep = window.Get("Audio").New("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjI1LjEwMQAAAAAAAAAAAAAA/+NAwAAAAAAAAAAAAFhpbmcAAAAPAAAAAwAAA3YAlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaWlpaW8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw8PDw////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAACQAAAAAAAAAAAN2UrY2LgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/jYMQAEvgiwl9DAAAAO1ALSi19XgYG7wIAAAJOD5R0HygIAmD5+sEHLB94gBAEP8vKAgGP/BwMf+D4Pgh/DAPg+D5//y4f///8QBhMQBgEAfB8HwfAgIAgAHAGCFAj1fYUCZyIbThYFExkefOCo8Y7JxiQ0mGVaHKwwGCtGCUkY9OCugoFQwDKqmHQiUCxRAKOh4MjJFAnTkq6QqFGavRpYUCmMxpZnGXJa0xiJcTGZb1gJjwOJDJgoUJG5QQuDAsypiumkp5TUjrOobR2liwoGBf/X1nChmipnKVtSmMNQDGitG1fT/JhR+gYdCvy36lTrxCVV8Paaz1otLndT2fZuOMp3VpatmVR3LePP/8bSQpmhQZECqWsFeJxoepX9dbfHS13/////aysppUblm//8t7p2Ez7xKD/42DE4E5z9pr/nNkRw6bhdiCAZVVSktxunhxhH//4xF+bn4//6//3jEvylMM2K9XmWSn3ah1L2MqVIjmNlJtpQux1n3ajA0ZnFSu5EpX////uGatn///////1r/pYabq0mKT//TRyTEFNRTMuOTkuNaqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq/+MQxNIAAANIAcAAAKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqg==")
+		// Create and return the Promise object
+		promiseConstructor := js.Global().Get("Promise")
+		return promiseConstructor.New(handler)
+	})
 }

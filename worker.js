@@ -21,5 +21,7 @@ async function handleRequest(request) {
   const go = new Go();
   const instance = await WebAssembly.instantiate(WASM, go.importObject);
   go.run(instance);
-  return new Response("Make sure a and b are numbers\n", { status: 200 });
+  const response = await MyGoFunc('https://random-data-api.com/api/stripe/random_stripe')
+	const message = await response.json()
+  return new Response("message: "+ JSON.stringify(message) +"\n", { status: 200 });
 }
