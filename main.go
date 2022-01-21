@@ -23,14 +23,14 @@ import (
 // Main function: it sets up our Wasm application
 func main() {
 	// Define the function "MyGoFunc" in the JavaScript scope
-	js.Global().Set("MyGoFunc", MyGoFunc())
+	js.Global().Set("Worker", Worker())
 	// Prevent the function from returning, which is required in a wasm module
 	select {}
 }
 
 // MyGoFunc fetches an external resource by making a HTTP request from Go
 // The JavaScript method accepts one argument, which is the URL to request
-func MyGoFunc() js.Func {
+func Worker() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		requestUrl := args[0].String()
 		// We need to return a Promise because HTTP requests are blocking in Go
@@ -58,17 +58,7 @@ func MyGoFunc() js.Func {
 					return
 				}
 
-				// "data" is a byte slice, so we need to convert it to a JS Uint8Array object
-				arrayConstructor := js.Global().Get("Uint8Array")
-				dataJS := arrayConstructor.New(len(data))
-				js.CopyBytesToJS(dataJS, data)
-
-				// Create a Response object and pass the data
-				responseConstructor := js.Global().Get("Response")
-				response := responseConstructor.New(dataJS)
-
-				// Resolve the Promise
-				resolve.Invoke(response)
+				resolve.Invoke(string(data))
 			}()
 			return nil
 		})

@@ -21,6 +21,5 @@ npm run build
 ```
 
 ## TODO:
-- make shim library for `net/http`
-- use go:build to filter shim or real `net/http` based on environment https://github.com/golang/go/blob/master/src/syscall/js/js.go 
-- make cloudflare workers js lib
+- convert incoming request to http.Request
+- convert outgoing http.ResponseWriter to javascript string
