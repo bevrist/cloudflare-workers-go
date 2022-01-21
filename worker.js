@@ -21,6 +21,6 @@ async function handleRequest(request) {
   const go = new Go();
   const instance = await WebAssembly.instantiate(WASM, go.importObject);
   go.run(instance);
-  const response = await MyGoFunc('https://random-data-api.com/api/stripe/random_stripe')
+  const response = await WorkerWrapper()
   return new Response("message: "+ response +"\n", { status: 200 });
 }
