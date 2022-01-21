@@ -32,7 +32,7 @@ func (w *jsResponseWriter) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 }
 
-func Worker(w http.ResponseWriter, r *http.Request) {
+func WorkerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("testtttt", "passssss")
 	resp, _ := http.Get("https://random-data-api.com/api/stripe/random_stripe")
 	reqBody, _ := ioutil.ReadAll(resp.Body)
@@ -42,15 +42,16 @@ func Worker(w http.ResponseWriter, r *http.Request) {
 // Main function: it sets up our Wasm application
 func main() {
 	// Define the function "MyGoFunc" in the JavaScript scope
-	js.Global().Set("WorkerWrapper", WorkerWrapper())
+	js.Global().Set("WorkerWrapper", WorkerHandlerWrapper())
 	// Prevent the function from returning, which is required in a wasm module
 	select {}
 }
 
 // MyGoFunc fetches an external resource by making a HTTP request from Go
 // The JavaScript method accepts one argument, which is the URL to request
-func WorkerWrapper() js.Func {
+func WorkerHandlerWrapper() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		// requestUrl := args[0].String()
 		// We need to return a Promise because HTTP requests are blocking in Go
 		handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			resolve := args[0]
@@ -78,9 +79,13 @@ func WorkerWrapper() js.Func {
 
 				var w http.ResponseWriter = new(jsResponseWriter)
 				var r http.Request
-				Worker(w, &r)
+				WorkerHandler(w, &r)
 				a := w.(*jsResponseWriter)
-				resolve.Invoke(string(a.body))
+				// resolve.Invoke(string(a.body))
+				respond := make(map[string]interface{})
+				respond["body"] = string(a.body)
+				respond["response"] = "a=b"
+				resolve.Invoke(js.ValueOf(respond))
 			}()
 			return nil
 		})

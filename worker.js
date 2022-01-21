@@ -22,5 +22,7 @@ async function handleRequest(request) {
   const instance = await WebAssembly.instantiate(WASM, go.importObject);
   go.run(instance);
   const response = await WorkerWrapper()
-  return new Response("message: "+ response +"\n", { status: 200 });
+  console.log(response)
+  // console.log(JSON.parse(response).response)
+  return new Response(response.body, { status: 200 });
 }
