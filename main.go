@@ -13,7 +13,7 @@ import (
 
 type jsResponseWriter struct {
 	http.ResponseWriter
-	header     http.Header
+	headers    http.Header
 	body       []byte
 	statusCode int
 }
@@ -24,8 +24,8 @@ func (w *jsResponseWriter) Write(b []byte) (int, error) {
 }
 
 func (w *jsResponseWriter) Header() http.Header {
-	w.header = make(http.Header)
-	return w.header
+	w.headers = make(http.Header)
+	return w.headers
 }
 
 func (w *jsResponseWriter) WriteHeader(statusCode int) {
@@ -69,7 +69,10 @@ func WorkerHandlerWrapper() js.Func {
 				responseInit["status"] = 200
 				responseInit["statusText"] = "cool thing"
 				headers := make(map[string]interface{})
-				headers["a"] = "b"
+				//get headers
+				for key, _ := range a.headers {
+					headers[key] = a.headers.Get(key)
+				}
 				responseInit["headers"] = headers
 				bodyInit["response"] = responseInit
 				resolve.Invoke(js.ValueOf(bodyInit))
