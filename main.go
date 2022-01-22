@@ -36,7 +36,7 @@ func WorkerHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("testtttt", "passssss")
 	resp, _ := http.Get("https://random-data-api.com/api/stripe/random_stripe")
 	reqBody, _ := ioutil.ReadAll(resp.Body)
-	fmt.Fprintf(w, "hi: "+string(reqBody))
+	fmt.Fprintf(w, string(reqBody))
 }
 
 // Main function: it sets up our Wasm application
@@ -55,37 +55,24 @@ func WorkerHandlerWrapper() js.Func {
 		// We need to return a Promise because HTTP requests are blocking in Go
 		handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			resolve := args[0]
-			// reject := args[1]
+			// reject := args[1]  // can reject the promise with this followed by a return:
+			// 		reject.Invoke(js.Global().Get("Error").New(err.Error()))
 			go func() {
-				// res, err := http.DefaultClient.Get("https://random-data-api.com/api/stripe/random_stripe")
-				// if err != nil {
-				// 	// Handle errors: reject the Promise if we have an error
-				// 	errorConstructor := js.Global().Get("Error")
-				// 	errorObject := errorConstructor.New(err.Error())
-				// 	reject.Invoke(errorObject)
-				// 	return
-				// }
-				// defer res.Body.Close()
-
-				// // Read the response body
-				// data, err := ioutil.ReadAll(res.Body)
-				// if err != nil {
-				// 	// Handle errors here too
-				// 	errorConstructor := js.Global().Get("Error")
-				// 	errorObject := errorConstructor.New(err.Error())
-				// 	reject.Invoke(errorObject)
-				// 	return
-				// }
-
 				var w http.ResponseWriter = new(jsResponseWriter)
 				var r http.Request
 				WorkerHandler(w, &r)
 				a := w.(*jsResponseWriter)
 				// resolve.Invoke(string(a.body))
-				respond := make(map[string]interface{})
-				respond["body"] = string(a.body)
-				respond["response"] = "a=b"
-				resolve.Invoke(js.ValueOf(respond))
+				bodyInit := make(map[string]interface{})
+				bodyInit["body"] = string(a.body)
+				responseInit := make(map[string]interface{})
+				responseInit["status"] = 200
+				responseInit["statusText"] = "cool thing"
+				headers := make(map[string]interface{})
+				headers["a"] = "b"
+				responseInit["headers"] = headers
+				bodyInit["response"] = responseInit
+				resolve.Invoke(js.ValueOf(bodyInit))
 			}()
 			return nil
 		})
