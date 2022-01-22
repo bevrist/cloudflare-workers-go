@@ -54,7 +54,16 @@ func main() {
 // The JavaScript method accepts one argument, which is the URL to request
 func WorkerHandlerWrapper() js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		// requestUrl := args[0].String()
+		request := args[0]
+		body := args[1]
+		println(request.Get("url").String())
+		println(request.Get("method").String())
+
+		//TODO: extract headers
+		println(request.Get("headers").String())
+		//get body from incoming request
+		println(body.String())
+
 		// We need to return a Promise because HTTP requests are blocking in Go
 		handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			resolve := args[0]

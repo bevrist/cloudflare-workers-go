@@ -21,8 +21,10 @@ async function handleRequest(request) {
   const go = new Go();
   const instance = await WebAssembly.instantiate(WASM, go.importObject);
   go.run(instance);
-  const response = await WorkerWrapper()
+  const body = await request.text()
+  const response = await WorkerWrapper(request, body)
   // console.log(response.response)
   // console.log(response.response.headers)
+  console.log(Object.fromEntries(request.headers))
   return new Response(response.body, response.response);
 }
