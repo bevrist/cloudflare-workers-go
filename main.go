@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"syscall/js"
 )
 
@@ -33,7 +34,9 @@ func (w *jsResponseWriter) WriteHeader(statusCode int) {
 }
 
 func WorkerHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("testtttt", "passssss")
+	w.Header().Set("testtttt", "passssss")
+	w.Header().Add("testtttt", "22222")
+	w.Header().Add("testtttt", "passsss2")
 	resp, _ := http.Get("https://random-data-api.com/api/stripe/random_stripe")
 	reqBody, _ := ioutil.ReadAll(resp.Body)
 	fmt.Fprintf(w, string(reqBody))
@@ -62,16 +65,18 @@ func WorkerHandlerWrapper() js.Func {
 				var r http.Request
 				WorkerHandler(w, &r)
 				a := w.(*jsResponseWriter)
-				// resolve.Invoke(string(a.body))
 				bodyInit := make(map[string]interface{})
 				bodyInit["body"] = string(a.body)
 				responseInit := make(map[string]interface{})
-				responseInit["status"] = 200
-				responseInit["statusText"] = "cool thing"
+				if a.statusCode == 0 {
+					responseInit["status"] = 200
+				} else {
+					responseInit["status"] = a.statusCode
+				}
+				//get headers from golang
 				headers := make(map[string]interface{})
-				//get headers
-				for key, _ := range a.headers {
-					headers[key] = a.headers.Get(key)
+				for key := range a.headers {
+					headers[key] = strings.Join(a.headers.Values(key), ", ")
 				}
 				responseInit["headers"] = headers
 				bodyInit["response"] = responseInit
