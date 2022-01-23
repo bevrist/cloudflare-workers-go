@@ -22,9 +22,30 @@ async function handleRequest(request) {
   const instance = await WebAssembly.instantiate(WASM, go.importObject);
   go.run(instance);
   const body = await request.text()
-  const response = await WorkerWrapper(request, body)
-  // console.log(response.response)
-  // console.log(response.response.headers)
-  console.log(Object.fromEntries(request.headers))
+  //TODO: try to use js arrayBuffer and golang CopyBytesToGo instead of text()
+  console.log(body)
+  var headerKeys = []
+  var headerValues = []
+  for (var pair of request.headers.entries()) {
+    headerKeys.push(pair[0])
+    headerValues.push(pair[1])
+  }
+  // console.log(JSON.stringify(headerKeys))
+  // console.log(JSON.stringify(headerValues))
+  // pass request objects to golang func
+  // all parameters are contained in args[] as a js.Value
+  const response = await WorkerHandlerWrapper(request, body, headerKeys.length, headerKeys, headerValues)
+  // console.log(Object.fromEntries(request.headers))
   return new Response(response.body, response.response);
 }
+
+
+// // Create a test Headers object
+// var myHeaders = new Headers();
+// myHeaders.append('Content-Type', 'text/xml');
+// myHeaders.append('Vary', 'Accept-Language');
+
+// // Display the key/value pairs
+// for (var pair of myHeaders.entries()) {
+//    console.log(pair[0]+ ': '+ pair[1]);
+// }
