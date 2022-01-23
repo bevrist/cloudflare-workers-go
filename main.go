@@ -1,9 +1,12 @@
-// Copyright (C) 2020 Alessandro Segala (ItalyPaleAle)
-// License: MIT
+//useful links:
+// https://pkg.go.dev/syscall/js#Func
+// https://developers.cloudflare.com/workers/runtime-apis/request#properties
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
+// https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
+// https://github.com/bevrist/workout-site/blob/master/frontend-api/frontend-api.go
 
 package main
 
-// Import the package to access the Wasm environment
 import (
 	"fmt"
 	"io/ioutil"
@@ -58,17 +61,18 @@ func WorkerHandlerWrapper() js.Func {
 		request := args[0] // the request object was 1st parameter
 		// body := args[1].String() // the body string was the 2nd parameter
 
-		// extract request headers
-		headerLen := args[2].Int() // the 3-5 parameters are headers
+		// extract js request headers
+		headerLen := args[2].Int() // the 3-5th parameters are js headers
 		headerKeys := args[3]
-		headerValues := args[4]
+		headerVals := args[4]
 		var reqHeaders http.Header = make(http.Header)
 		for i := 0; i < headerLen; i++ {
-			reqHeaders[headerKeys.Index(i).String()] = []string{headerValues.Index(i).String()}
+			reqHeaders[headerKeys.Index(i).String()] = []string{headerVals.Index(i).String()}
 		}
 
 		// create golang request
 		var r http.Request
+		//TODO: r.Body = io.readCloser
 		r.Method = request.Get("method").String()
 		r.Header = reqHeaders
 		// make URL object
@@ -100,9 +104,13 @@ func WorkerHandlerWrapper() js.Func {
 			// reject := args[1]  // can reject the promise with this followed by a return:
 			// 		reject.Invoke(js.Global().Get("Error").New(err.Error()))
 			go func() {
+				// create http.ResponseWriter interface using custom js implementation
 				var w http.ResponseWriter = new(jsResponseWriter)
+				//run http handler
 				WorkerHandler(w, &r)
+				//cast responseWriter to custom implementation so we can access extended variables
 				a := w.(*jsResponseWriter)
+				//create js compatible maps for js response object
 				bodyInit := make(map[string]interface{})
 				bodyInit["body"] = string(a.body)
 				responseInit := make(map[string]interface{})
@@ -118,6 +126,7 @@ func WorkerHandlerWrapper() js.Func {
 				}
 				responseInit["headers"] = headers
 				bodyInit["response"] = responseInit
+				//return body object to js
 				resolve.Invoke(js.ValueOf(bodyInit))
 			}()
 			return nil
