@@ -5,6 +5,9 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream
 // https://github.com/bevrist/workout-site/blob/master/frontend-api/frontend-api.go
 
+// test curl command
+// `curl -v -H "hi: there" -H "a: b" -b 'cookie=a' -X POST http://localhost:8787 -d "tedasst234"`
+
 package main
 
 import (
