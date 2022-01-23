@@ -12,6 +12,7 @@ import (
 	"syscall/js"
 )
 
+// implementation of http.ResponseWrites that writes to JavaScript
 type jsResponseWriter struct {
 	http.ResponseWriter
 	headers    http.Header
@@ -19,6 +20,7 @@ type jsResponseWriter struct {
 	statusCode int
 }
 
+// Writes message to be passed to JS Response object, always returns 200, nil
 func (w *jsResponseWriter) Write(b []byte) (int, error) {
 	w.body = append(w.body, b...)
 	return 200, nil
